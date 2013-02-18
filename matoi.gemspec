@@ -20,6 +20,7 @@ Gem::Specification.new do |gem|
   gem.add_dependency "rroonga"
   gem.add_dependency "twitter-stream"
   gem.add_dependency "oauth"
+  gem.add_dependency "thor"
   gem.add_development_dependency "rspec"
   gem.add_development_dependency "fuubar"
 end
