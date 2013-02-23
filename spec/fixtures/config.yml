@@ -1,0 +1,5 @@
+token_file: token.json
+db_path: tweets_db
+consumer:
+  token: THE_CONSUMER
+  secret: THE_CONSUMER_SECRET
