@@ -85,7 +85,7 @@ module Matoi
     def open_db
       return if @opened
 
-      if File.exists?(db)
+      if db && File.exists?(db)
         Groonga::Database.open(db)
       else
         Groonga::Database.create(path: db)
