@@ -18,6 +18,7 @@ Gem::Specification.new do |gem|
   gem.require_paths = ["lib"]
 
   gem.add_dependency "rroonga"
+  gem.add_dependency "sewell"
   gem.add_dependency "twitter-stream"
   gem.add_dependency "oauth"
   gem.add_dependency "thor"
