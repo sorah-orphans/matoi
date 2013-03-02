@@ -87,6 +87,26 @@ describe Matoi::Tweet, groonga: true do
 
         record.retweeted_users.should be_include(retweeter)
       end
+
+      context "then retweeted by another user" do
+        prepend_before do
+          orig_id = tweet['user']['id']
+
+          tweet['user']['id'] = 42
+          described_class.add(tweet)
+
+          tweet['user']['id'] = orig_id
+        end
+
+        it "adds retweeter as retweeted_by" do
+          retweeter_a = Groonga['users'][tweet['user']['id']]
+          retweeter_b = Groonga['users'][42]
+
+          record.retweeted_users.size.should == 2
+          record.retweeted_users.should be_include(retweeter_a)
+          record.retweeted_users.should be_include(retweeter_b)
+        end
+      end
     end
 
     context "with reply" do
