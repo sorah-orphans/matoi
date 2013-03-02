@@ -94,6 +94,8 @@ module Matoi
       Groonga::Schema.define do |s|
         s.create_table("users", type: :hash, key_type: :unsigned_integer64) do |t|
           t.short_text 'screen_name'
+          t.short_text 'profile_image_url'
+          t.short_text 'profile_image_url_https'
         end
         s.create_table("user_screen_names", type: :patricia_trie,
                                            key_type: :short_text) do |t|
@@ -101,6 +103,7 @@ module Matoi
         end
 
         s.create_table('urls', type: :hash, key_type: :short_text) do |t|
+          t.text 'url'
           t.text 'display_url'
           t.text 'title'
         end
@@ -108,10 +111,6 @@ module Matoi
         s.create_table("year_months", type: :hash, key_type: :short_text) do |t|
         end
         s.create_table("year_month_days", type: :hash, key_type: :short_text) do |t|
-        end
-        s.create_table("days", type: :hash, key_type: :integer16) do |t|
-        end
-        s.create_table("hours", type: :hash, key_type: :integer16) do |t|
         end
 
         s.create_table('hashtags', type: :hash, key_type: :short_text) do |t|
@@ -123,6 +122,7 @@ module Matoi
           t.reference 'favorited_users', 'users', type: :vector
           t.reference 'retweeted_users', 'users', type: :vector
           t.reference 'hashtags', 'hashtags', type: :vector
+          t.reference 'urls', 'urls', type: :vector
 
           t.unsigned_integer64 'in_reply_to_status_id'
           t.reference 'in_reply_to', 'tweets'
@@ -133,13 +133,12 @@ module Matoi
           t.time 'created_at'
           t.reference 'year_month'
           t.reference 'year_month_day'
-          t.reference 'day'
-          t.reference 'hour'
+          t.unsigned_integer16 'day'
+          t.unsigned_integer16 'hour'
 
           t.text 'text'
 
           t.text 'source'
-          t.text 'profile_image_url'
         end
 
         s.create_table('tweet_terms', key_type: :short_text,
