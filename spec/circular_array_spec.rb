@@ -1,7 +1,7 @@
 require 'spec_helper'
 require 'matoi/circular_array'
 
-describe Matoi::CircularArray do
+describe Matoi::CircularArray, groonga: false do
   let(:size) { 3 }
   subject(:carray) { described_class.new(size) }
 
