@@ -30,6 +30,7 @@ RSpec.configure do |config|
       end
     else
       Dir.mktmpdir("matoi_groonga") do |dir|
+        setup_mocks_for_rspec
         Groonga::Database.create(path: File.join(dir, 'matoi_groonga'))
         Groonga::Database.stub(create: Groonga::Context.default.database,
                                open:   Groonga::Context.default.database)
