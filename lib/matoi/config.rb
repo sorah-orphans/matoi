@@ -121,8 +121,11 @@ module Matoi
           t.reference 'mentioned_users', 'users', type: :vector
           t.reference 'favorited_users', 'users', type: :vector
           t.reference 'retweeted_users', 'users', type: :vector
+          t.reference 'retrieved_users', 'users', type: :vector
           t.reference 'hashtags', 'hashtags', type: :vector
           t.reference 'urls', 'urls', type: :vector
+
+          t.text 'url_entity'
 
           t.unsigned_integer64 'in_reply_to_status_id'
           t.reference 'in_reply_to', 'tweets'
@@ -146,6 +149,12 @@ module Matoi
                                       type: :patricia_trie,
                                       normalizer: :NormalizerAuto) do |t|
           t.index("tweets.text")
+        end
+
+        s.change_table('users') do |t|
+          t.index 'tweets.user'
+          t.index 'tweets.mentioned_users'
+          t.index 'tweets.retrieved_users'
         end
       end
       @opened = true
