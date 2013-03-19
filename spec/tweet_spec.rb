@@ -3,6 +3,7 @@ require 'json'
 require 'matoi/tweet'
 require 'matoi/config'
 require 'time'
+require 'sewell'
 
 describe Matoi::Tweet, groonga: true do
   let(:config) { Matoi::Config.new({}, File.join(File.dirname(__FILE__), 'fixtures')) }
@@ -167,24 +168,383 @@ describe Matoi::Tweet, groonga: true do
         end
       end
     end
+
+    describe "retrieved_users" do
+      it "records retrieved user"
+    end
   end
 
   describe ".query" do
-  end
+    # <sewell-query>
+    # user:(screen_name or ID, separated by comma, OR)
+    # from:(screen_name or ID, separated by comma, OR)
+    # mention:(screen_name or ID, separated by comma, OR)
+    # at:YYYYMMDD
+    #    YYYYMMDD-YYYYMMDD
+    #    (separeted by comma, OR)
+    #
+    # TODO: test non existence relations
+    #
+    # Groonga['tweets'].select('user.screen_name:sora_h').each.to_a.map{|_|_['user'].key}
+    # Groonga['tweets'].select('user:5161091').each.to_a.map{|_|_['user']['screen_name']}
+    # Groonga['tweets'].select('mentioned_users:5161091') 
+    # Groonga['tweets'].select('mentioned_users:5161091000') 
 
-  describe ".hashtags" do
-  end
+    describe "querying" do
+      before do
+        %w(deletion mention multiple_mention reply retweet tweet tweet_with_hashtag tweet_with_url).each do |json|
+          described_class.add(fixture_json(json))
+        end
 
-  describe ".users" do
-  end
+        dummy_tweets = Groonga['tweets'].select('text:this-should-not-be-found')
+        dummy_tweets.size.should be_zero
 
-  describe ".all" do
-  end
+        @query = nil
+        Groonga['tweets'].stub(:select) do |query|
+          @query = query
+          dummy_tweets
+        end
+      end
 
-  describe ".user(screen_name)" do
-  end
+      subject { @query }
 
-  describe ".hashtag(tag)" do
+
+      describe "sewell-query" do
+        it "generates query using Sewell" do
+          Sewell.should_receive(:generate).with('aaa', %w[text]).and_return('DUMMY_QUERY')
+
+          expect { described_class.query('aaa') }.to \
+            change { @query }.to('DUMMY_QUERY')
+        end
+      end
+
+      describe "user filter" do
+        context "with user_id" do
+          it "generates user column query" do
+            query = 'user:5161091'
+            expect { described_class.query(query) }.to \
+              change { @query }.to('( user:5161091 OR mentioned_users:5161091 )')
+          end
+
+          context "with multiple" do
+            it "generates user column query for all" do
+              query = 'user:5161091,608190778'
+              expect { described_class.query(query) }.to \
+                change { @query }.to(
+                  '( user:5161091 OR mentioned_users:5161091 ' \
+                  'OR user:608190778 OR mentioned_users:608190778 ' \
+                  ')')
+            end
+          end
+        end
+
+        context "with screen_name" do
+          it "generates user column query" do
+            query = 'user:sora_h'
+            expect { described_class.query(query) }.to \
+              change { @query }.to('( user:5161091 OR mentioned_users:5161091 )')
+          end
+
+          context "with multiple" do
+            it "generates user column query" do
+              query = 'user:sora_h,sora_her'
+
+              expect { described_class.query(query) }.to \
+                change { @query }.to(
+                  '( user:5161091 OR mentioned_users:5161091 ' \
+                  'OR user:608190778 OR mentioned_users:608190778 ' \
+                  ')')
+
+            end
+          end
+
+          context "with multiple (user:)" do
+            it "generates user column query" do
+              query = 'user:sora_h user:sora_her'
+
+              expect { described_class.query(query) }.to \
+                change { @query }.to(
+                  '( user:5161091 OR mentioned_users:5161091 ' \
+                  'OR user:608190778 OR mentioned_users:608190778 ' \
+                  ')')
+
+            end
+          end
+        end
+
+        context "when screen_name and user_id has mixed" do
+          it "generates user column query" do
+            query = 'user:5161091,sora_her'
+
+            expect { described_class.query(query) }.to \
+              change { @query }.to(
+                '( user:5161091 OR mentioned_users:5161091 ' \
+                'OR user:608190778 OR mentioned_users:608190778 ' \
+                ')')
+          end
+        end
+
+        context "with keyword" do
+          it "generates user column query" do
+            query = 'a user:5161091'
+            expect { described_class.query(query) }.to \
+              change { @query }.to('( text:@a ) + ( user:5161091 OR mentioned_users:5161091 )')
+          end
+        end
+
+        context "with minus" do
+          it "generates user column query" do
+            query = 'a -user:5161091'
+            expect { described_class.query(query) }.to \
+              change { @query }.to('( text:@a ) - ( user:5161091 OR mentioned_users:5161091 )')
+          end
+
+          context "without plus" do
+            it "raises error"
+          end
+
+          context "and plus" do
+            it "generates user column query" do
+              query = 'a -user:5161091 user:sora_her'
+              expect { described_class.query(query) }.to \
+                change { @query }.to('( text:@a ) + ( user:608190778 OR mentioned_users:608190778 ) - ( user:5161091 OR mentioned_users:5161091 )')
+            end
+          end
+        end
+      end
+
+      describe "from filter" do
+        context "with user_id" do
+          it "generates user column query" do
+            query = 'from:5161091'
+            expect { described_class.query(query) }.to \
+              change { @query }.to('( user:5161091 )')
+          end
+
+          context "with multiple" do
+            it "generates user column query for all" do
+              query = 'from:5161091,608190778'
+              expect { described_class.query(query) }.to \
+                change { @query }.to('( user:5161091 OR user:608190778 )')
+            end
+          end
+        end
+
+        context "with screen_name" do
+          it "generates user column query" do
+            query = 'from:sora_h'
+            expect { described_class.query(query) }.to \
+              change { @query }.to('( user:5161091 )')
+          end
+
+          context "with multiple" do
+            it "generates user column query" do
+              query = 'from:sora_h,sora_her'
+
+              expect { described_class.query(query) }.to \
+                change { @query }.to('( user:5161091 OR user:608190778 )')
+            end
+          end
+
+          context "with multiple (user:)" do
+            it "generates user column query" do
+              query = 'from:sora_h from:sora_her'
+
+              expect { described_class.query(query) }.to \
+                change { @query }.to('( user:5161091 OR user:608190778 )')
+            end
+          end
+        end
+
+        context "when screen_name and user_id has mixed" do
+          it "generates user column query" do
+            query = 'from:5161091,sora_her'
+
+            expect { described_class.query(query) }.to \
+              change { @query }.to('( user:5161091 OR user:608190778 )')
+          end
+        end
+
+        context "with keyword" do
+          it "generates user column query" do
+            query = 'a from:5161091'
+            expect { described_class.query(query) }.to \
+              change { @query }.to('( text:@a ) + ( user:5161091 )')
+          end
+        end
+
+        context "with minus" do
+          it "generates user column query" do
+            query = 'a -from:5161091'
+            expect { described_class.query(query) }.to \
+              change { @query }.to('( text:@a ) - ( user:5161091 )')
+          end
+
+          context "without plus" do
+            it "raises error"
+          end
+
+          context "and plus" do
+            it "generates user column query" do
+              query = 'a -from:5161091 from:sora_her'
+              expect { described_class.query(query) }.to \
+                change { @query }.to('( text:@a ) + ( user:608190778 ) - ( user:5161091 )')
+            end
+          end
+        end
+      end
+
+      describe "mention filter" do
+        context "with user_id" do
+          it "generates user column query" do
+            query = 'mention:5161091'
+            expect { described_class.query(query) }.to \
+              change { @query }.to('( mentioned_users:5161091 )')
+          end
+
+          context "with multiple" do
+            it "generates user column query for all" do
+              query = 'mention:5161091,608190778'
+              expect { described_class.query(query) }.to \
+                change { @query }.to('( mentioned_users:5161091 OR mentioned_users:608190778 )')
+            end
+          end
+        end
+
+        context "with screen_name" do
+          it "generates user column query" do
+            query = 'mention:sora_h'
+            expect { described_class.query(query) }.to \
+              change { @query }.to('( mentioned_users:5161091 )')
+          end
+
+          context "with multiple" do
+            it "generates user column query" do
+              query = 'mention:sora_h,sora_her'
+
+              expect { described_class.query(query) }.to \
+                change { @query }.to('( mentioned_users:5161091 OR mentioned_users:608190778 )')
+            end
+          end
+
+          context "with multiple (mentioned_users:)" do
+            xit "generates user column query" do
+              query = 'mention:sora_h mention:sora_her'
+
+              expect { described_class.query(query) }.to \
+                change { @query }.to('( mentioned_users:5161091 ) + ( mentioned_users:608190778 )')
+            end
+          end
+        end
+
+        context "when screen_name and user_id has mixed" do
+          it "generates user column query" do
+            query = 'mention:5161091,sora_her'
+
+            expect { described_class.query(query) }.to \
+              change { @query }.to('( mentioned_users:5161091 OR mentioned_users:608190778 )')
+          end
+        end
+
+        context "with keyword" do
+          it "generates user column query" do
+            query = 'a mention:5161091'
+            expect { described_class.query(query) }.to \
+              change { @query }.to('( text:@a ) + ( mentioned_users:5161091 )')
+          end
+        end
+
+        context "with minus" do
+          it "generates user column query" do
+            query = 'a -mention:5161091'
+            expect { described_class.query(query) }.to \
+              change { @query }.to('( text:@a ) - ( mentioned_users:5161091 )')
+          end
+
+          context "without plus" do
+            it "raises error"
+          end
+
+          context "and plus" do
+            it "generates user column query" do
+              query = 'a -mention:5161091 mention:sora_her'
+              expect { described_class.query(query) }.to \
+                change { @query }.to('( text:@a ) + ( mentioned_users:608190778 ) - ( mentioned_users:5161091 )')
+            end
+          end
+        end
+      end
+
+      describe "at filter" do
+        it "generates year_month_day column query" do
+          query = 'at:20130402'
+          expect { described_class.query(query) }.to \
+            change { @query }.to('( year_month_day:2013/04/02 )')
+        end
+
+        context "with range" do
+          it "generates year_month_day column query" do
+            query = 'at:20130402..20130405'
+            expect { described_class.query(query) }.to \
+              change { @query }.to('( year_month_day:2013/04/02 OR' \
+                                    ' year_month_day:2013/04/03 OR' \
+                                    ' year_month_day:2013/04/04 OR' \
+                                    ' year_month_day:2013/04/05 )')
+          end
+        end
+
+        context "when specified multiple" do
+          it "joins the specified conditions with OR" do
+            query = 'at:20130402..20130405 at:20121212'
+            expect { described_class.query(query) }.to \
+              change { @query }.to('( year_month_day:2013/04/02 OR' \
+                                    ' year_month_day:2013/04/03 OR' \
+                                    ' year_month_day:2013/04/04 OR' \
+                                    ' year_month_day:2013/04/05 OR' \
+                                    ' year_month_day:2012/12/12 )')
+          end
+        end
+
+        context "with keyword" do
+          it "generates year_month_day column query" do
+            query = 'foo at:20130402'
+            expect { described_class.query(query) }.to \
+              change { @query }.to('( text:@foo ) + ( year_month_day:2013/04/02 )')
+          end
+        end
+
+        context "with minus" do
+          it "generates year_month_day column query" do
+            query = 'foo -at:20130402'
+            expect { described_class.query(query) }.to \
+              change { @query }.to('( text:@foo ) - ( year_month_day:2013/04/02 )')
+          end
+
+          context "without plus" do
+            it "raises error"
+          end
+
+          context "and plus" do
+            it "generates year_month_day column query" do
+              query = 'foo at:20130401 -at:20130402'
+              expect { described_class.query(query) }.to \
+                change { @query }.to('( text:@foo ) + ' \
+                                     '( year_month_day:2013/04/01 ) - ' \
+                                     '( year_month_day:2013/04/02 )')
+            end
+          end
+        end
+      end
+    end
+
+    describe "result" do
+      let(:query) { 'a' }
+      subject { described_class.query(query) }
+
+      it "returns Groonga::Table" do
+        subject.should be_a_kind_of(Groonga::Table)
+      end
+    end
   end
 end
 
