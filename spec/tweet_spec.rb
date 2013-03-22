@@ -21,9 +21,11 @@ describe Matoi::Tweet, groonga: true do
     let(:in_reply_to) { nil }
     let(:tweet) { fixture_json(json_name) }
     let(:record) { Groonga['tweets'][tweet['id']] }
+    let(:received_user) { nil }
+
     before do
       described_class.add(in_reply_to) if in_reply_to
-      described_class.add(tweet)
+      described_class.add(tweet, received_user)
     end
 
     context "with normal tweet" do
@@ -169,8 +171,49 @@ describe Matoi::Tweet, groonga: true do
       end
     end
 
-    describe "retrieved_users" do
-      it "records retrieved user"
+    describe "received_user" do
+      let(:json_name) { 'tweet' }
+      let(:user) do
+        u = tweet['user']
+        Groonga['users'].add(u['id'], {
+          screen_name:             u['screen_name'],
+        })
+      end
+      let(:user2) do
+        u = tweet['user']
+        Groonga['users'].add(42, {
+          screen_name:             u['screen_name'] + '_42',
+        })
+      end
+
+      let(:received_user) { user }
+
+      context "when not added yet" do
+        it "records received user" do
+          record.received_users.should == [user]
+        end
+      end
+
+      context "when added by same user" do
+        before do
+          described_class.add(tweet, user)
+        end
+
+        it "records received user" do
+          record.received_users.should == [user]
+        end
+      end
+
+      context "when added by another user" do
+        before do
+          record
+          described_class.add(tweet, user2)
+        end
+
+        it "records received user" do
+          record.received_users.should == [user, user2]
+        end
+      end
     end
   end
 

@@ -121,7 +121,7 @@ module Matoi
           t.reference 'mentioned_users', 'users', type: :vector
           t.reference 'favorited_users', 'users', type: :vector
           t.reference 'retweeted_users', 'users', type: :vector
-          t.reference 'retrieved_users', 'users', type: :vector
+          t.reference 'received_users', 'users', type: :vector
           t.reference 'hashtags', 'hashtags', type: :vector
           t.reference 'urls', 'urls', type: :vector
 
@@ -154,7 +154,7 @@ module Matoi
         s.change_table('users') do |t|
           t.index 'tweets.user'
           t.index 'tweets.mentioned_users'
-          t.index 'tweets.retrieved_users'
+          t.index 'tweets.received_users'
         end
       end
       @opened = true

@@ -4,7 +4,7 @@ require 'time'
 module Matoi
   class Tweet
     class << self
-      def add(tweet)
+      def add(tweet, received_user = nil)
         users    = Groonga['users']
         tweets   = Groonga['tweets']
         urls     = Groonga['urls']
@@ -49,6 +49,16 @@ module Matoi
         end
         attrs[:urls] = tweet['entities']['urls'].map do |u|
           urls.add(u['expanded_url'], url: u['url'], display_url: u['display_url'])
+        end
+
+        if received_user
+          g_tweet = tweets[tweet['id']]
+          if g_tweet
+            attrs[:received_users] = g_tweet['received_users'] + [received_user]
+            attrs[:received_users].uniq!(&:key)
+          else
+            attrs[:received_users] = [received_user]
+          end
         end
 
         tweets.add(tweet['id'], attrs)
