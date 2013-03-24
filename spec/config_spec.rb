@@ -71,13 +71,14 @@ describe Matoi::Config, groonga: false do
   end
 
   describe "#open_db" do
+    let(:db_path) { File.expand_path File.join(base_path, "tweets_db") }
     context "if database exists" do
       before do
-        File.should_receive(:exists?).with('/tweets_db').and_return(true)
+        File.should_receive(:exists?).with(db_path).and_return(true)
       end
 
       it "opens db", groonga: :dir do
-        Groonga::Database.should_receive(:open).with('/tweets_db') do
+        Groonga::Database.should_receive(:open).with(db_path) do
           Groonga::Database.create(path: File.join(@tmpdir, 'db'))
         end
         subject.open_db
@@ -86,11 +87,11 @@ describe Matoi::Config, groonga: false do
 
     context "if database not exists" do
       before do
-        File.should_receive(:exists?).with('/tweets_db').and_return(false)
+        File.should_receive(:exists?).with(db_path).and_return(false)
       end
 
       it "opens db", groonga: :dir do
-        Groonga::Database.should_receive(:create).with(path: '/tweets_db') do
+        Groonga::Database.should_receive(:create).with(path: db_path) do
           Groonga::Database.create_orig(path: File.join(@tmpdir, 'db'))
         end
         subject.open_db
