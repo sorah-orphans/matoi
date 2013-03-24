@@ -15,7 +15,8 @@ describe Matoi::Config, groonga: false do
     }
   end
 
-  subject(:config) { described_class.new(config_hash, '/') }
+  let(:base_path) { File.expand_path File.join(__FILE__, '..', 'fixtures') }
+  subject(:config) { described_class.new(config_hash, base_path) }
 
   describe "#consumer" do
     subject { config.consumer }
@@ -94,6 +95,19 @@ describe Matoi::Config, groonga: false do
         end
         subject.open_db
       end
+    end
+  end
+
+  describe "#add_credential" do
+    # def add_credential(screen_name, token, secret)
+    it "saves new credential to file" do
+      new_credentials_yml = config.credentials.dup.tap { |c|
+        c['screen_name'] = {token: 'a', secret: 'b'}
+      }.to_yaml
+
+      File.should_receive(:write).with(config.token_file, new_credentials_yml)
+
+      config.add_credential('screen_name', 'a', 'b')
     end
   end
 end

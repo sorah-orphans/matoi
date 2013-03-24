@@ -50,12 +50,7 @@ module Matoi
     end
 
     def credentials
-      if @credentials
-        @credentials
-      else
-        credentials_json = JSON.parse(File.read(token_file))
-        @credentials = Hash[credentials_json.map { |u,c| [u, c.map{ |k,v| [k.to_sym, v.to_s] }] }]
-      end
+      @credentials ||= YAML.load_file(token_file)
     end
 
     def access_token(user)
@@ -67,6 +62,11 @@ module Matoi
       else
         nil
       end
+    end
+
+    def add_credential(screen_name, token, secret)
+      credentials['screen_name'] = {token: token, secret: secret}
+      File.write(token_file, credentials.to_yaml)
     end
 
     def credential_for_stream(user)
