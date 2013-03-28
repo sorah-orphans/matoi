@@ -50,7 +50,11 @@ module Matoi
     end
 
     def credentials
-      @credentials ||= YAML.load_file(token_file)
+      begin
+        @credentials ||= YAML.load_file(token_file)
+      rescue Errno::ENOENT
+        @credentials ||= {}
+      end
     end
 
     def access_token(user)
