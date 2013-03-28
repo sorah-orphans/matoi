@@ -1,0 +1,9 @@
+notifications:
+  recipients:
+    - travis@sorah.jp
+rvm:
+  - 1.9.3
+  - 2.0.0
+script: 'bundle exec rspec -fd ./spec'
+before_install:
+  - export GROONGA_MASTER=yes; curl https://raw.github.com/groonga/groonga/master/data/travis/setup.sh | sh
