@@ -69,7 +69,7 @@ module Matoi
     end
 
     def add_credential(screen_name, token, secret)
-      credentials['screen_name'] = {token: token, secret: secret}
+      credentials[screen_name] = {token: token, secret: secret}
       File.write(token_file, credentials.to_yaml)
     end
 

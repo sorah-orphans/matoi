@@ -103,12 +103,12 @@ describe Matoi::Config, groonga: false do
     # def add_credential(screen_name, token, secret)
     it "saves new credential to file" do
       new_credentials_yml = config.credentials.dup.tap { |c|
-        c['screen_name'] = {token: 'a', secret: 'b'}
+        c['foo'] = {token: 'a', secret: 'b'}
       }.to_yaml
 
       File.should_receive(:write).with(config.token_file, new_credentials_yml)
 
-      config.add_credential('screen_name', 'a', 'b')
+      config.add_credential('foo', 'a', 'b')
     end
   end
 end
