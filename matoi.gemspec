@@ -19,6 +19,7 @@ Gem::Specification.new do |gem|
 
   gem.add_dependency "rroonga"
   gem.add_dependency "sewell"
+  gem.add_dependency "twitter"
   gem.add_dependency "twitter-stream"
   gem.add_dependency "oauth"
   gem.add_dependency "thor"
